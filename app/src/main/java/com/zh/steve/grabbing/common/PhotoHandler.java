@@ -1,4 +1,4 @@
-package com.zh.steve.grabbing;
+package com.zh.steve.grabbing.common;
 
 /**
  * Created by Steve Zhang
@@ -7,20 +7,24 @@ package com.zh.steve.grabbing;
  * If it works, I created it. If not, I didn't.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.os.Environment;
 import android.widget.Toast;
 
+import com.zh.steve.grabbing.Constants;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class PhotoHandler implements PictureCallback {
 
     private final Context context;
+    private static final String DATEFORMAT = "yyyymmddhhmmss";
 
     public PhotoHandler(Context context) {
         this.context = context;
@@ -28,18 +32,14 @@ public class PhotoHandler implements PictureCallback {
 
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
-
         File pictureFileDir = getDir();
-
         if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
-
             Toast.makeText(context, "Can't create directory to save image.",
                     Toast.LENGTH_LONG).show();
             return;
-
         }
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyymmddhhmmss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATEFORMAT);
         String date = dateFormat.format(new Date());
         String photoFile = "Picture_" + date + ".jpg";
 
@@ -54,6 +54,11 @@ public class PhotoHandler implements PictureCallback {
             fos.close();
             Toast.makeText(context, "New Image saved:" + photoFile,
                     Toast.LENGTH_LONG).show();
+
+            // 成功后发送广播
+            Intent intent = new Intent(Constants.PIC_TAKEN_RESULT);
+            intent.putExtra("path", photoFile);
+            context.sendBroadcast(intent);
         } catch (Exception error) {
             Toast.makeText(context, "Image could not be saved.",
                     Toast.LENGTH_LONG).show();
