@@ -14,7 +14,11 @@
     <!--Auto-start permission-->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
+    <!-- 显示顶层浮窗 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application
         android:allowBackup="true"
@@ -23,7 +27,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -33,14 +37,21 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".BootBroadcastReceiver">
+        <receiver android:name=".common.BootBroadcastReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
 
-        <service android:name=".UDPListenerService"/>
-        <service android:name=".CameraService"/>
+        <service android:name=".services.UDPListenerService"/>
+        <service
+            android:name=".services.CameraService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.zh.steve.grabbing.ACTION_CAMERA"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
