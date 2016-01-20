@@ -1,4 +1,4 @@
-package com.zh.steve.grabbing.services;
+package com.zh.steve.grabbing;
 
 import android.app.IntentService;
 import android.content.Context;
@@ -7,9 +7,8 @@ import android.util.Log;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.zh.steve.grabbing.Constants;
 import com.zh.steve.grabbing.common.App;
-import com.zh.steve.grabbing.utils.PathUtil;
+import com.zh.steve.grabbing.common.DirUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,8 +66,7 @@ public class UploadImgService extends IntentService {
     private void handleUploadImg(String serverAddress, String fileName) {
         OkHttpClient okHttpClient = new OkHttpClient();
         try {
-            PathUtil pathUtil = new PathUtil();
-            File file = new File(pathUtil.getPath(fileName));
+            File file = new File(getPath(fileName));
             String contentType = file.toURL().openConnection().getContentType();
             RequestBody fileBody = RequestBody.create(MediaType.parse(contentType), file);
             RequestBody requestBody = new MultipartBody.Builder()
@@ -77,7 +75,7 @@ public class UploadImgService extends IntentService {
                     .build();
 
             Request request = new Request.Builder()
-                    .url(pathUtil.getUploadAddress(serverAddress))
+                    .url(getUploadAddress(serverAddress))
                     .post(requestBody)
                     .build();
 
@@ -111,5 +109,13 @@ public class UploadImgService extends IntentService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public String getPath(String fileName) {
+        return DirUtils.getDir().getPath() + File.separator + fileName;
+    }
+
+    public String getUploadAddress(String serverAddress) {
+        return "http://" + serverAddress + ":" + Constants.UPLOAD_SERVER_PORT + Constants.UPLOAD_PATH;
     }
 }
