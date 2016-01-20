@@ -10,9 +10,12 @@ package com.zh.steve.grabbing;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
@@ -29,10 +32,31 @@ import java.net.InetAddress;
  */
 public class UDPListenerService extends Service {
     private static final String TAG = "UDPListenerService";
+    private PowerManager.WakeLock mWakeLock;
+    private WifiManager.WifiLock mWifiLock;
+    private WifiManager.MulticastLock mMulticastLock;
     private Boolean shouldRestartSocketListen = true;
     //Boolean shouldListenForUDPBroadcast = false;
     DatagramSocket socket;
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        PowerManager pm = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "PartialWakeLockTag");
+        mWakeLock.acquire();
+        Log.d(TAG, "Acquiring wake lock");
+
+        WifiManager wm = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
+        mWifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL, "FullWifiModeTag");
+        mWifiLock.acquire();
+        Log.d(TAG, "Acquiring Wifi lock");
+
+        mMulticastLock = wm.createMulticastLock("MulticastLockTag");
+        mMulticastLock.acquire();
+        Log.d(TAG, "Acquiring Multicast lock");
+    }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         shouldRestartSocketListen = true;
@@ -45,8 +69,21 @@ public class UDPListenerService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "Stop for udp broadcast");
         stopListen();
+        Log.d(TAG, "Stop for udp broadcast");
+
+        if (mWakeLock != null) {
+            mWakeLock.release();
+            Log.d(TAG, "Release wake lock");
+        }
+        if (mWifiLock != null) {
+            mWifiLock.release();
+            Log.d(TAG, "Release Wifi lock");
+        }
+        if (mMulticastLock != null) {
+            mMulticastLock.release();
+            Log.d(TAG, "Release multicast lock");
+        }
         stopForeground(true);
     }
 
