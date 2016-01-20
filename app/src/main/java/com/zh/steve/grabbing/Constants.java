@@ -16,8 +16,9 @@ public class Constants {
     public static final String EXTRA_IMG_NAME = "com.zh.steve.grabbing.extra.IMG_NAME";
     public static final String RESULT_IMG_TAKEN = "com.zh.steve.grabbing.result.IMG_TAKEN";
     public static final String ACTION_UPLOAD_IMG = "com.zh.steve.grabbing.action.UPLOAD_IMAGE";
+    public static final String ACTION_UDP_DESTORY = "com.zh.steve.grabbing.action.UDP_DESTORY";
 
     public interface NOTIFICATION_ID {
-        public static int FOREGROUND_SERVICE = 101;
+        int FOREGROUND_SERVICE = 101;
     }
 }

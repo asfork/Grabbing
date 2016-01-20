@@ -12,17 +12,17 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.zh.steve.grabbing.CameraService;
 import com.zh.steve.grabbing.R;
+import com.zh.steve.grabbing.UDPListenerService;
 import com.zh.steve.grabbing.common.App;
 import com.zh.steve.grabbing.common.ServerAddressCallback;
-import com.zh.steve.grabbing.services.UDPListenerService;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -76,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent udpIntent = new Intent(MainActivity.this, UDPListenerService.class);
+                startService(udpIntent);
                 bindService(udpIntent, conn, Context.BIND_AUTO_CREATE);
             }
         });
@@ -84,7 +85,9 @@ public class MainActivity extends AppCompatActivity {
         stopUDP.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Intent udpIntent = new Intent(MainActivity.this, UDPListenerService.class);
                 unbindService(conn);
+                stopService(udpIntent);
                 textView.setText(null);
             }
         });
@@ -93,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         startCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent cameraIntent = new Intent("com.zh.steve.grabbing.ACTION_CAMERA");
+                Intent cameraIntent = new Intent(MainActivity.this, CameraService.class);
                 startService(cameraIntent);
             }
         });
@@ -105,19 +108,6 @@ public class MainActivity extends AppCompatActivity {
                 //TODO
             }
         });
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        if (conn != null) {
-            try {
-                unbindService(conn);
-            } catch (Exception e) {
-                Log.e(TAG, e.toString(), e);
-            }
-        }
     }
 
     @Override

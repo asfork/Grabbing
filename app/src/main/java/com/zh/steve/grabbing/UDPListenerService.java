@@ -69,6 +69,8 @@ public class UDPListenerService extends Service {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+
         stopListen();
         Log.d(TAG, "Stop for udp broadcast");
 
@@ -85,6 +87,9 @@ public class UDPListenerService extends Service {
             Log.d(TAG, "Release multicast lock");
         }
         stopForeground(true);
+
+        Intent destoryIntent = new Intent(Constants.ACTION_UDP_DESTORY);
+        sendBroadcast(destoryIntent);
     }
 
     private void startForcegroundService() {
