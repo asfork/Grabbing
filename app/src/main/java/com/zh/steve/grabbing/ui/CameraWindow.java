@@ -1,10 +1,13 @@
 package com.zh.steve.grabbing.ui;
 
 import android.content.Context;
+import android.hardware.Camera;
 import android.util.Log;
-import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+
+import com.zh.steve.grabbing.common.CameraHandlerThread;
+import com.zh.steve.grabbing.common.CameraUtils;
 
 /**
  * Created by Steve Zhang
@@ -15,21 +18,67 @@ import android.view.WindowManager.LayoutParams;
 public class CameraWindow {
     private static final String TAG = "CameraWindow";
 
-    private static WindowManager windowManager;
-    private static SurfaceView dummyCameraView;
-    private static Context mContext;
+    private WindowManager windowManager;
+    private CameraPreview dummyCameraView;
+    private CameraHandlerThread mCameraHandlerThread;
+    private Context mContext;
+    private Camera mCamera;
+
+    private Boolean mFlashState;
+    private boolean mAutofocusState = true;
+
+    public CameraWindow(Context context) {
+        mContext = context;
+    }
+
+    public void startCamera(int cameraId) {
+        if (this.mCameraHandlerThread == null) {
+            this.mCameraHandlerThread = new CameraHandlerThread(this);
+        }
+
+        this.mCameraHandlerThread.startCamera(cameraId);
+    }
+
+    public void setupCameraPreview(Camera camera) {
+        mCamera = camera;
+        if (mCamera != null) {
+            Log.d(TAG, "Open camera successfully");
+            if (mFlashState != null) {
+                setFlash(mFlashState);
+            }
+
+            showCameraWindow();
+        }
+    }
+
+    public void setFlash(boolean flag) {
+        mFlashState = flag;
+        if (mCamera != null && CameraUtils.isFlashSupported(mCamera)) {
+
+            Camera.Parameters parameters = mCamera.getParameters();
+            if (flag) {
+                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_TORCH)) {
+                    return;
+                }
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            } else {
+                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_OFF)) {
+                    return;
+                }
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            }
+            mCamera.setParameters(parameters);
+        }
+    }
 
     /**
-     * 显示全局窗口
+     * Show preview window
      *
-     * @param context
      */
-    public static void showCameraWindow(Context context) {
-        if (CameraWindow.mContext == null) {
-            CameraWindow.mContext = context.getApplicationContext();
-            windowManager = (WindowManager) CameraWindow.mContext
-                    .getSystemService(Context.WINDOW_SERVICE);
-            dummyCameraView = new SurfaceView(CameraWindow.mContext);
+    private void showCameraWindow() {
+        if (mCamera != null) {
+            windowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+            dummyCameraView = new CameraPreview(mContext, mCamera);
             LayoutParams params = new LayoutParams();
             params.width = 1;
             params.height = 1;
@@ -41,20 +90,48 @@ public class CameraWindow {
                     | LayoutParams.FLAG_NOT_TOUCHABLE;
             windowManager.addView(dummyCameraView, params);
             Log.d(TAG, TAG + " showing");
+
+            setAutoFocus(mAutofocusState);
+        }
+    }
+
+    public void setAutoFocus(boolean state) {
+        mAutofocusState = state;
+        if (dummyCameraView != null) {
+            dummyCameraView.setAutoFocus(state);
+        }
+    }
+
+    public void stopCamera() {
+        if (mCamera != null) {
+            dummyCameraView.stopCameraPreview();
+            dummyCameraView.setCamera(null);
+            mCamera.release();
+            mCamera = null;
+        }
+        if (mCameraHandlerThread != null) {
+            mCameraHandlerThread.quit();
+            mCameraHandlerThread = null;
+        }
+    }
+
+    public void stopCameraPreview() {
+        if (dummyCameraView != null) {
+            dummyCameraView.stopCameraPreview();
         }
     }
 
     /**
      * @return 获取窗口视图
      */
-    public static SurfaceView getDummyCameraView() {
+    public CameraPreview getDummyCameraView() {
         return dummyCameraView;
     }
 
     /**
      * 隐藏窗口
      */
-    public static void dismissCameraWindow() {
+    public void dismissCameraWindow() {
         try {
             if (windowManager != null && dummyCameraView != null) {
                 windowManager.removeView(dummyCameraView);
