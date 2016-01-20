@@ -2,7 +2,7 @@ package com.zh.steve.grabbing.services;
 
 /**
  * Created by Steve Zhang
- * 1/13/16
+ * 1/13/13
  * <p/>
  * If it works, I created it. If not, I didn't.
  */
@@ -36,7 +36,9 @@ public class CameraService extends Service {
     private BroadcastReceiver picTakenResultReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(Constants.PIC_TAKEN_RESULT)) {
+            if (intent.getAction().equals(Constants.RESULT_IMG_TAKEN)) {
+                String fileName = intent.getStringExtra(Constants.EXTRA_IMG_NAME);
+                UploadImgService.startUploadImg(context, fileName);
                 stopSelf();
             }
         }
@@ -49,13 +51,14 @@ public class CameraService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        CameraWindow.showCameraWindow(getApplicationContext());
+        CameraWindow.showCameraWindow(this);
         registerReceiver();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand...");
+
         startTakePic();
         return START_NOT_STICKY;
     }
@@ -64,16 +67,17 @@ public class CameraService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy...");
+        CameraWindow.dismissCameraWindow();
+
         isRunning = false;
         releaseCamera();
 
         unregisterReceiver(picTakenResultReceiver);
-        CameraWindow.dismissCameraWindow();
     }
 
     private void registerReceiver() {
         IntentFilter filter = new IntentFilter();
-        filter.addAction(Constants.PIC_TAKEN_RESULT);
+        filter.addAction(Constants.RESULT_IMG_TAKEN);
         registerReceiver(picTakenResultReceiver, filter);
     }
 
@@ -92,14 +96,15 @@ public class CameraService extends Service {
         Log.d(TAG, "autoTakePic...");
         isRunning = true;
 
-        //这里得开线程打开摄像头
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                //初始化camera并对焦拍照
-                initCamera();
-            }
-        }).start();
+        initCamera();
+//        //这里得开线程打开摄像头
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                //初始化camera并对焦拍照
+//                initCamera();
+//            }
+//        }).start();
     }
 
     //初始化摄像头
@@ -108,10 +113,17 @@ public class CameraService extends Service {
             mCamera.stopPreview();
         }
         //如果存在摄像头
-        if (checkCameraHardware(getApplicationContext())) {
+        if (checkCameraHardware(this)) {
             //获取摄像头（首选后置）
             if (openFacingBackCamera()) {
                 Log.d(TAG, "openCameraSuccess");
+
+//                try {
+//                    //因为开启摄像头需要时间，这里让线程睡两秒
+//                    Thread.sleep(2000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
 
                 Camera.Parameters mParam = mCamera.getParameters();
                 mParam.setPictureFormat(PixelFormat.JPEG);//设置拍照后存储的图片格式
@@ -145,9 +157,8 @@ public class CameraService extends Service {
         Log.d(TAG, "AutoFocusing");
 
         try {
-            //因为开启摄像头需要时间，这里让线程睡两秒
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
+            mCamera.cancelAutoFocus();
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -167,7 +178,7 @@ public class CameraService extends Service {
     private void takePicture() {
         Log.d(TAG, "takePicture...");
         try {
-            mCamera.takePicture(null, null, new PhotoHandler(getApplicationContext()));
+            mCamera.takePicture(null, null, new PhotoHandler(this));
         } catch (Exception e) {
             Log.d(TAG, "takePicture failed!");
             e.printStackTrace();

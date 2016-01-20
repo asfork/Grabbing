@@ -20,6 +20,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.zh.steve.grabbing.R;
+import com.zh.steve.grabbing.common.App;
 import com.zh.steve.grabbing.common.ServerAddressCallback;
 import com.zh.steve.grabbing.services.UDPListenerService;
 
@@ -97,8 +98,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button stopCamera = (Button) findViewById(R.id.stop_camera);
-        stopCamera.setOnClickListener(new View.OnClickListener() {
+        Button uploadImg = (Button) findViewById(R.id.upload_img);
+        uploadImg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 //TODO
@@ -147,6 +148,8 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = msg.getData();
             String ip = bundle.getString("ip");
             textView.setText("Current server address:" + ip);
+            App app = (App) getApplicationContext();
+            app.setServerAddress(ip);
         }
     };
 }

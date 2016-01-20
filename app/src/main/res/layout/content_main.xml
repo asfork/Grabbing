@@ -39,8 +39,8 @@
         android:text="Start Camera Grabbing"/>
 
     <Button
-        android:id="@+id/stop_camera"
+        android:id="@+id/upload_img"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Stop Camera Grabbing"/>
+        android:text="Upload Images"/>
 </LinearLayout>

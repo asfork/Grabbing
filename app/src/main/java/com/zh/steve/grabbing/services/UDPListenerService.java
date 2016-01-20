@@ -2,7 +2,7 @@ package com.zh.steve.grabbing.services;
 
 /**
  * Created by Steve Zhang
- * 1/13/16
+ * 1/13/14
  * <p/>
  * If it works, I created it. If not, I didn't.
  */
@@ -13,6 +13,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.zh.steve.grabbing.Constants;
 import com.zh.steve.grabbing.common.ServerAddressCallback;
 
 import java.net.DatagramPacket;
@@ -25,15 +26,13 @@ import java.net.InetAddress;
  */
 public class UDPListenerService extends Service {
     private static final String TAG = "UDPListenerService";
-    private static String UDP_BROADCAST = "UDPBroadcast";
-    private static Integer port = 9056;
     private Boolean shouldRestartSocketListen = true;
 
     //Boolean shouldListenForUDPBroadcast = false;
     DatagramSocket socket;
 
     /**
-     * 更新进度的回调接口
+     * 回调接口
      */
     private ServerAddressCallback serverAddressCallback;
 
@@ -76,17 +75,9 @@ public class UDPListenerService extends Service {
         }
     }
 
-    private void broadcastIntent(String senderIP, String message) {
-        Intent intent = new Intent(UDPListenerService.UDP_BROADCAST);
-        intent.putExtra("sender", senderIP);
-        intent.putExtra("message", message);
-        sendBroadcast(intent);
-    }
-
     private void startCameraService() {
         Intent intent = new Intent(getApplicationContext(), CameraService.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        getApplicationContext().startActivity(intent);
+        getApplicationContext().startService(intent);
     }
 
     void startListenForUDPBroadcast() {
@@ -96,7 +87,7 @@ public class UDPListenerService extends Service {
                     // send and receive by the udp IP group
                     InetAddress broadcastIP = InetAddress.getByName("192.168.3.255");
                     while (shouldRestartSocketListen) {
-                        listenAndWaitAndThrowIntent(broadcastIP, port);
+                        listenAndWaitAndThrowIntent(broadcastIP, Constants.LISTEN_PORT);
                     }
                     //if (!shouldListenForUDPBroadcast) throw new ThreadDeath();
                 } catch (Exception e) {
@@ -119,6 +110,7 @@ public class UDPListenerService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "Stop for udp broadcast");
         stopListen();
     }
 
