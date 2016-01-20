@@ -30,7 +30,8 @@
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -44,10 +45,10 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".services.UDPListenerService"/>
-        <service android:name=".services.UploadImgService"/>
+        <service android:name=".UDPListenerService"/>
+        <service android:name=".UploadImgService"/>
         <service
-            android:name=".services.CameraService"
+            android:name=".CameraService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.zh.steve.grabbing.ACTION_CAMERA"/>
