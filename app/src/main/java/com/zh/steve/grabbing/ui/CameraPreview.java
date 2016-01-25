@@ -93,11 +93,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             // 线程阻塞一会，保证摄像头启动成功
             try {
                 Thread.sleep(Constants.THREAD_SLEEP_TIME);
+                Log.d(TAG, "Thread is sleeping");
             } catch (Exception e) {
                 Log.d(TAG, e.toString(), e);
             }
 
             Log.d(TAG, "takePicture...");
+            mCamera.setPreviewCallback(null);
             mCamera.takePicture(null, null, new PhotoHandler(mContext));
         }
     }
@@ -105,8 +107,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void safeAutoFocus() {
         try {
             mCamera.autoFocus(autoFocusCB);
-
-            takePicture();
+            Log.d(TAG, "Safe autoFocus success");
         } catch (RuntimeException re) {
             // Horrible hack to deal with autofocus errors on Sony devices
             // See https://github.com/dm77/barcodescanner/issues/7 for example
@@ -135,7 +136,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         parameters.setPictureFormat(PixelFormat.JPEG);//设置拍照后存储的图片格式
         parameters.setPictureSize(pictureSize.width, pictureSize.height);
         // 保持摄像头持续自动对焦
-        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
         mCamera.setParameters(parameters);
     }
 
@@ -147,13 +148,14 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             mAutoFocus = state;
             if (mAutoFocus) {
                 if (mSurfaceCreated) { // check if surface created before using autofocus
-                    Log.v(TAG, "Starting autofocus");
+                    Log.d(TAG, "Starting autofocus");
                     safeAutoFocus();
                 } else {
+                    Log.d(TAG, "Starting schedule AutoFocus");
                     scheduleAutoFocus(); // wait 1 sec and then do check again
                 }
             } else {
-                Log.v(TAG, "Cancelling autofocus");
+                Log.d(TAG, "Cancelling autofocus");
                 mCamera.cancelAutoFocus();
             }
         }
@@ -170,11 +172,18 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     // Mimic continuous auto-focusing
     Camera.AutoFocusCallback autoFocusCB = new Camera.AutoFocusCallback() {
         public void onAutoFocus(boolean success, Camera camera) {
-            scheduleAutoFocus();
+            if (success) {
+                Log.d(TAG, "autoFocusCallback: success...");
+                takePicture();
+            } else {
+                Log.d(TAG, "autoFocusCallback: fail...");
+                takePicture();
+            }
         }
     };
 
     private void scheduleAutoFocus() {
+        Log.d(TAG, "schedule AutoFocus");
         mAutoFocusHandler.postDelayed(doAutoFocus, 1000);
     }
 }

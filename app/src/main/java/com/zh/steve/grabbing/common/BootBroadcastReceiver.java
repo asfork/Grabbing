@@ -26,7 +26,7 @@ public class BootBroadcastReceiver extends BroadcastReceiver {
             Intent mIntent = new Intent(context, UDPListenerService.class);
             context.startService(mIntent);
             Log.d(TAG, "Start service by user present");
-        } else if (intent.getAction().equals(Constants.ACTION_UDP_DESTORY)) {
+        } else if (intent.getAction().equals(Constants.ACTION_DESTORY_SERVICE)) {
             Intent mIntent = new Intent(context, UDPListenerService.class);
             context.startService(mIntent);
             Log.d(TAG, "Start service by udp listener service destory");

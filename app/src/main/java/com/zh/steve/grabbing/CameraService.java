@@ -19,8 +19,6 @@ import com.zh.steve.grabbing.ui.CameraWindow;
 
 public class CameraService extends Service {
     private static final String TAG = "CameraService";
-    private static final String FLASH_STATE = "FLASH_STATE";
-    private static final String AUTO_FOCUS_STATE = "AUTO_FOCUS_STATE";
     private static final String CAMERA_ID = "CAMERA_ID";
 
     private CameraWindow mCameraWindow;
@@ -30,7 +28,7 @@ public class CameraService extends Service {
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(Constants.RESULT_IMG_TAKEN)) {
                 String fileName = intent.getStringExtra(Constants.EXTRA_IMG_NAME);
-                UploadImgService.startUploadImg(context, fileName);
+                PhotoUploadedService.startUploadImg(context, fileName);
                 stopSelf();
             }
         }
@@ -51,10 +49,7 @@ public class CameraService extends Service {
 
         if (intent != null) {
             mCameraId = intent.getIntExtra(CAMERA_ID, -1);
-        } else {
-            mCameraId = -1;
         }
-
         mCameraWindow = new CameraWindow(this);
         mCameraWindow.startCamera(mCameraId);
 

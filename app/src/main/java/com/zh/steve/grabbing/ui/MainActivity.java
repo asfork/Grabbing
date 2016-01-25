@@ -19,9 +19,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.zh.steve.grabbing.CameraService;
+import com.zh.steve.grabbing.Constants;
 import com.zh.steve.grabbing.R;
 import com.zh.steve.grabbing.UDPListenerService;
-import com.zh.steve.grabbing.common.App;
 import com.zh.steve.grabbing.common.ServerAddressCallback;
 
 public class MainActivity extends AppCompatActivity {
@@ -105,7 +105,10 @@ public class MainActivity extends AppCompatActivity {
         uploadImg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO
+                String photoFile = "";
+                Intent uploadIntent = new Intent(Constants.RESULT_IMG_TAKEN);
+                uploadIntent.putExtra(Constants.EXTRA_IMG_NAME, photoFile);
+                sendBroadcast(uploadIntent);
             }
         });
     }
@@ -138,8 +141,6 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = msg.getData();
             String ip = bundle.getString("ip");
             textView.setText("Current server address:" + ip);
-            App app = (App) getApplicationContext();
-            app.setServerAddress(ip);
         }
     };
 }
