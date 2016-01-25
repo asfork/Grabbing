@@ -19,12 +19,15 @@ import android.os.PowerManager;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
+import com.zh.steve.grabbing.common.App;
 import com.zh.steve.grabbing.common.ServerAddressCallback;
 import com.zh.steve.grabbing.ui.MainActivity;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /*
  * Linux command to send UDP:
@@ -37,7 +40,7 @@ public class UDPListenerService extends Service {
     private WifiManager.MulticastLock mMulticastLock;
     private Boolean shouldRestartSocketListen = true;
     //Boolean shouldListenForUDPBroadcast = false;
-    DatagramSocket socket;
+    private DatagramSocket socket;
 
     @Override
     public void onCreate() {
@@ -88,7 +91,7 @@ public class UDPListenerService extends Service {
         }
         stopForeground(true);
 
-        Intent destoryIntent = new Intent(Constants.ACTION_UDP_DESTORY);
+        Intent destoryIntent = new Intent(Constants.ACTION_DESTORY_SERVICE);
         sendBroadcast(destoryIntent);
     }
 
@@ -105,7 +108,7 @@ public class UDPListenerService extends Service {
         startForeground(Constants.NOTIFICATION_ID.FOREGROUND_SERVICE, notification);
     }
 
-    private void listenAndWaitAndThrowIntent(InetAddress broadcastIP, Integer port) throws Exception {
+    private void listenAndWaitAndThrowIntent(Integer port) throws Exception {
         byte[] recvBuf = new byte[1024];
         if (socket == null || socket.isClosed()) {
 //            socket = new DatagramSocket(port, broadcastIP);
@@ -117,21 +120,23 @@ public class UDPListenerService extends Service {
         Log.d(TAG, "Waiting for UDP broadcast");
         socket.receive(packet);
 
-        String senderIP = packet.getAddress().getHostAddress();
+        String hostIP = packet.getAddress().getHostAddress();
         String message = new String(packet.getData()).trim();
 
-        Log.d(TAG, "Got UDB broadcast from " + senderIP + ", message: " + message);
-
-//        broadcastIntent(senderIP, message);
-//        socket.close();
+        Log.d(TAG, "Got UDB broadcast from " + hostIP + ", message: " + message);
 
         // 服务器地址发生变化通知调用方
         if (serverAddressCallback != null) {
-            serverAddressCallback.updateServerAddress(senderIP);
+            serverAddressCallback.updateServerAddress(hostIP);
         }
 
-        if (message.equals("grab")) {
+        App app = (App) getApplicationContext();
+        app.setServerAddress(hostIP);
+
+        if (message.equals(Constants.ACTION_GRAB)) {
             startCameraService();
+        } else if (message.equals(Constants.ACTION_REGISTER)) {
+            registerDevices(socket, hostIP);
         }
     }
 
@@ -140,16 +145,28 @@ public class UDPListenerService extends Service {
         getApplicationContext().startService(intent);
     }
 
+    private void registerDevices(DatagramSocket socket, String hostIP) {
+        try {
+            byte[] buf = Constants.STATUS_DEVICE.getBytes();
+            InetAddress hostAddress = InetAddress.getByName(hostIP);
+            SocketAddress socketAddr = new InetSocketAddress(hostAddress, Constants.HOST_PORT);
+            DatagramPacket outPacket = new DatagramPacket(buf, buf.length,
+                    socketAddr);
+            socket.send(outPacket);
+            Log.d(TAG, "registration to " + hostAddress);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     void startListenForUDPBroadcast() {
         Thread UDPBroadcastThread = new Thread(new Runnable() {
             public void run() {
                 try {
-                    // send and receive by the udp IP group
-                    InetAddress broadcastIP = InetAddress.getByName("192.168.3.255");
                     while (shouldRestartSocketListen) {
-                        listenAndWaitAndThrowIntent(broadcastIP, Constants.LISTEN_PORT);
+                        listenAndWaitAndThrowIntent(Constants.LOCAL_PORT);
                     }
-                    //if (!shouldListenForUDPBroadcast) throw new ThreadDeath();
+//                    if (!shouldListenForUDPBroadcast) throw new ThreadDeath();
                 } catch (Exception e) {
                     Log.i(TAG, "no longer listening for UDP broadcasts cause of error " + e.getMessage());
                 }
@@ -188,7 +205,6 @@ public class UDPListenerService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         shouldRestartSocketListen = true;
-        startListenForUDPBroadcast();
         Log.e("UDP", "Service started");
         return new UDPListenerBinder();
     }
