@@ -3,15 +3,17 @@ package com.zh.steve.grabbing;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Environment;
 import android.util.Log;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.zh.steve.grabbing.common.App;
-import com.zh.steve.grabbing.common.DirUtils;
+import com.zh.steve.grabbing.common.UploadedHandlerThread;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -26,22 +28,21 @@ import okhttp3.Response;
  * <p/>
  * If it works, I created it. If not, I didn't.
  */
-public class UploadImgService extends IntentService {
-    private static final String TAG = "UploadImgService";
+public class PhotoUploadedService extends IntentService {
+    private static final String TAG = "PhotoUploadedService";
     private String serverAddress;
     private String fileName;
-    private int failure_times = 0;
 
 
     public static void startUploadImg(Context context, String fileName) {
-        Intent intent = new Intent(context, UploadImgService.class);
+        Intent intent = new Intent(context, PhotoUploadedService.class);
         intent.setAction(Constants.ACTION_UPLOAD_IMG);
         intent.putExtra(Constants.EXTRA_IMG_NAME, fileName);
         context.startService(intent);
     }
 
-    public UploadImgService() {
-        super("UploadImgService");
+    public PhotoUploadedService() {
+        super("PhotoUploadedService");
     }
 
     @Override
@@ -52,7 +53,7 @@ public class UploadImgService extends IntentService {
                 fileName = intent.getStringExtra(Constants.EXTRA_IMG_NAME);
                 App app = (App) getApplicationContext();
                 serverAddress = app.getServerAddress();
-                handleUploadImg(serverAddress, fileName);
+                handleUploadPhoto(serverAddress, fileName);
             }
         }
     }
@@ -61,6 +62,18 @@ public class UploadImgService extends IntentService {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy...");
+    }
+
+    private void handleUploadPhoto(String hostAddress, String photoName) {
+        try {
+            Socket socket = new Socket(hostAddress, Constants.HOST_PORT);
+            String photoPath = getPath(photoName);
+            if (socket.isBound()) {
+                new Thread(new UploadedHandlerThread(socket, photoPath)).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void handleUploadImg(String serverAddress, String fileName) {
@@ -79,11 +92,12 @@ public class UploadImgService extends IntentService {
                     .post(requestBody)
                     .build();
 
+            Log.d(TAG, "Uploaded address is:" + getUploadAddress(serverAddress));
             Response response = okHttpClient.newCall(request).execute();
             if (!response.isSuccessful()) throw new IOException("Unexpected code" + response);
 
             Log.d(TAG, response.body().string());
-            parseJSONObject(response.body().string());
+//            parseJSONObject(response.body().string());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -91,31 +105,28 @@ public class UploadImgService extends IntentService {
 
     private void parseJSONObject(String jsonData) {
         try {
-            JsonParser parser = new JsonParser();
-            JsonObject jsonObject = parser.parse(jsonData).getAsJsonObject();
-            boolean error = jsonObject.get("error").getAsBoolean();
-            String msg = jsonObject.get("message").getAsString();
+            JSONObject jsonObject = new JSONObject(jsonData);
+            boolean error = jsonObject.getBoolean("error");
+            String msg = jsonObject.getString("message");
             Log.d(TAG, msg);
 
-            // 上传失败后重新上传
-            if (!error && failure_times <= 3) {
-                handleUploadImg(serverAddress, fileName);
-                failure_times++;
-            } else if (failure_times > 3) {
-//                    sendBroadcastToServer();
-                //TODO
-            }
-
+            //TODO send uploaded result to host
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public String getPath(String fileName) {
-        return DirUtils.getDir().getPath() + File.separator + fileName;
+    private String getPath(String fileName) {
+        return getDir().getPath() + File.separator + fileName;
+    }
+
+    private File getDir() {
+        File sdDir = Environment
+                .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        return new File(sdDir, "Grabbing");
     }
 
     public String getUploadAddress(String serverAddress) {
-        return "http://" + serverAddress + ":" + Constants.UPLOAD_SERVER_PORT + Constants.UPLOAD_PATH;
+        return "http://" + serverAddress + ":" + Constants.HOST_PORT + Constants.UPLOAD_PATH;
     }
 }
