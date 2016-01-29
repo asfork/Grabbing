@@ -24,7 +24,7 @@ public class CameraWindow {
     private Context mContext;
     private Camera mCamera;
 
-    private Boolean mFlashState;
+    private Boolean mFlashState = true;
     private boolean mAutofocusState = true;
 
     public CameraWindow(Context context) {
@@ -57,12 +57,12 @@ public class CameraWindow {
 
             Camera.Parameters parameters = mCamera.getParameters();
             if (flag) {
-                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_TORCH)) {
+                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_AUTO)) {
                     return;
                 }
-                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
             } else {
-                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_OFF)) {
+                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_AUTO)) {
                     return;
                 }
                 parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);

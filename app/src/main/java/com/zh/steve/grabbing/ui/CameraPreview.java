@@ -17,6 +17,7 @@ import java.util.List;
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "CameraPreview";
+    private int focusCount = 1;
 
     private Camera mCamera;
     private Handler mAutoFocusHandler;
@@ -79,7 +80,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                     if (mSurfaceCreated) { // check if surface created before using autofocus
                         safeAutoFocus();
                     } else {
-                        scheduleAutoFocus(); // wait 1 sec and then do check again
+                        delayAutoFocus(); // wait 1 sec and then do check again
                     }
                 }
             } catch (Exception e) {
@@ -90,14 +91,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     private void takePicture() {
         if (mPreviewing && (mCamera != null)) {
-            // 线程阻塞一会，保证摄像头启动成功
-            try {
-                Thread.sleep(Constants.THREAD_SLEEP_TIME);
-                Log.d(TAG, "Thread is sleeping");
-            } catch (Exception e) {
-                Log.d(TAG, e.toString(), e);
-            }
-
             Log.d(TAG, "takePicture...");
             mCamera.setPreviewCallback(null);
             mCamera.takePicture(null, null, new PhotoHandler(mContext));
@@ -111,7 +104,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (RuntimeException re) {
             // Horrible hack to deal with autofocus errors on Sony devices
             // See https://github.com/dm77/barcodescanner/issues/7 for example
-            scheduleAutoFocus(); // wait 1 sec and then do check again
+            delayAutoFocus(); // wait 1 sec and then do check again
         }
     }
 
@@ -136,7 +129,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         parameters.setPictureFormat(PixelFormat.JPEG);//设置拍照后存储的图片格式
         parameters.setPictureSize(pictureSize.width, pictureSize.height);
         // 保持摄像头持续自动对焦
-        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         mCamera.setParameters(parameters);
     }
 
@@ -152,7 +145,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                     safeAutoFocus();
                 } else {
                     Log.d(TAG, "Starting schedule AutoFocus");
-                    scheduleAutoFocus(); // wait 1 sec and then do check again
+                    delayAutoFocus(); // wait 1 sec and then do check again
                 }
             } else {
                 Log.d(TAG, "Cancelling autofocus");
@@ -161,14 +154,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
     }
 
-    private Runnable doAutoFocus = new Runnable() {
-        public void run() {
-            if (mCamera != null && mPreviewing && mAutoFocus && mSurfaceCreated) {
-                safeAutoFocus();
-            }
-        }
-    };
-
     // Mimic continuous auto-focusing
     Camera.AutoFocusCallback autoFocusCB = new Camera.AutoFocusCallback() {
         public void onAutoFocus(boolean success, Camera camera) {
@@ -176,14 +161,25 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                 Log.d(TAG, "autoFocusCallback: success...");
                 takePicture();
             } else {
-                Log.d(TAG, "autoFocusCallback: fail...");
-                takePicture();
+                if (focusCount < 3) {
+                    Log.d(TAG, "autoFocusCallback: fail...");
+                    delayAutoFocus();
+                } else {
+                    takePicture();
+                }
             }
         }
     };
 
-    private void scheduleAutoFocus() {
+    private void delayAutoFocus() {
+
+        try {
+            Thread.sleep(Constants.THREAD_SLEEP_TIME);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        focusCount++;
         Log.d(TAG, "schedule AutoFocus");
-        mAutoFocusHandler.postDelayed(doAutoFocus, 1000);
+        safeAutoFocus();
     }
 }
