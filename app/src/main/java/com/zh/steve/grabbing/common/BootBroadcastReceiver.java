@@ -5,8 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import com.zh.steve.grabbing.BroadcastListenerService;
 import com.zh.steve.grabbing.Constants;
-import com.zh.steve.grabbing.UDPListenerService;
 
 /**
  * Created by Steve Zhang
@@ -19,15 +19,15 @@ public class BootBroadcastReceiver extends BroadcastReceiver {
 
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
-            Intent mIntent = new Intent(context, UDPListenerService.class);
+            Intent mIntent = new Intent(context, BroadcastListenerService.class);
             context.startService(mIntent);
             Log.d(TAG, "Start service by boot completed");
         } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
-            Intent mIntent = new Intent(context, UDPListenerService.class);
+            Intent mIntent = new Intent(context, BroadcastListenerService.class);
             context.startService(mIntent);
             Log.d(TAG, "Start service by user present");
         } else if (intent.getAction().equals(Constants.ACTION_DESTORY_SERVICE)) {
-            Intent mIntent = new Intent(context, UDPListenerService.class);
+            Intent mIntent = new Intent(context, BroadcastListenerService.class);
             context.startService(mIntent);
             Log.d(TAG, "Start service by udp listener service destory");
         }

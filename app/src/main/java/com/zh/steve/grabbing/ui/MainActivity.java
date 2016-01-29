@@ -18,10 +18,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.zh.steve.grabbing.BroadcastListenerService;
 import com.zh.steve.grabbing.CameraService;
 import com.zh.steve.grabbing.Constants;
 import com.zh.steve.grabbing.R;
-import com.zh.steve.grabbing.UDPListenerService;
 import com.zh.steve.grabbing.common.ServerAddressCallback;
 
 public class MainActivity extends AppCompatActivity {
@@ -37,10 +37,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             //返回一个 service 对象
-            UDPListenerService udpListenerService = ((UDPListenerService.UDPListenerBinder) service).getService();
+            BroadcastListenerService broadcastListenerService = ((BroadcastListenerService.UDPListenerBinder) service).getService();
 
             //注册回调接口来接收服务器地址的变化
-            udpListenerService.setServerAddressCallback(new ServerAddressCallback() {
+            broadcastListenerService.setServerAddressCallback(new ServerAddressCallback() {
                 @Override
                 public void updateServerAddress(String ip) {
                     Message message = new Message();
@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
         startUDP.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent udpIntent = new Intent(MainActivity.this, UDPListenerService.class);
+                Intent udpIntent = new Intent(MainActivity.this, BroadcastListenerService.class);
                 startService(udpIntent);
                 bindService(udpIntent, conn, Context.BIND_AUTO_CREATE);
             }
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         stopUDP.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent udpIntent = new Intent(MainActivity.this, UDPListenerService.class);
+                Intent udpIntent = new Intent(MainActivity.this, BroadcastListenerService.class);
                 unbindService(conn);
                 stopService(udpIntent);
                 textView.setText(null);

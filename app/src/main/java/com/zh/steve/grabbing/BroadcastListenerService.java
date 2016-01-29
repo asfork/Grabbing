@@ -1,12 +1,5 @@
 package com.zh.steve.grabbing;
 
-/**
- * Created by Steve Zhang
- * 1/13/14
- * <p/>
- * If it works, I created it. If not, I didn't.
- */
-
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -17,6 +10,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.v7.app.NotificationCompat;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.zh.steve.grabbing.common.App;
@@ -29,12 +23,14 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-/*
- * Linux command to send UDP:
- * #socat - UDP-DATAGRAM:192.168.1.255:11111,broadcast,sp=11111
+/**
+ * Created by Steve Zhang
+ * 1/13/16
+ * <p/>
+ * Listen for UDP broadcast and handles received UDP packet
  */
-public class UDPListenerService extends Service {
-    private static final String TAG = "UDPListenerService";
+public class BroadcastListenerService extends Service {
+    private static final String TAG = "BroadcastListener";
     private PowerManager.WakeLock mWakeLock;
     private WifiManager.WifiLock mWifiLock;
     private WifiManager.MulticastLock mMulticastLock;
@@ -135,8 +131,8 @@ public class UDPListenerService extends Service {
 
         if (message.equals(Constants.ACTION_GRAB)) {
             startCameraService();
-        } else if (message.equals(Constants.ACTION_REGISTER)) {
-            registerDevices(socket, hostIP);
+        } else if (message.equals(Constants.ACTION_CALL)) {
+            giveBroadcast(socket, hostIP);
         }
     }
 
@@ -145,9 +141,10 @@ public class UDPListenerService extends Service {
         getApplicationContext().startService(intent);
     }
 
-    private void registerDevices(DatagramSocket socket, String hostIP) {
+    private void giveBroadcast(DatagramSocket socket, String hostIP) {
         try {
-            byte[] buf = Constants.STATUS_DEVICE.getBytes();
+            String imei = ((TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
+            byte[] buf = imei.getBytes();
             InetAddress hostAddress = InetAddress.getByName(hostIP);
             SocketAddress socketAddr = new InetSocketAddress(hostAddress, Constants.HOST_PORT);
             DatagramPacket outPacket = new DatagramPacket(buf, buf.length,
@@ -215,8 +212,8 @@ public class UDPListenerService extends Service {
          *
          * @return
          */
-        public UDPListenerService getService() {
-            return UDPListenerService.this;
+        public BroadcastListenerService getService() {
+            return BroadcastListenerService.this;
         }
     }
 }

@@ -13,7 +13,7 @@ public class Constants {
     public static final String UPLOAD_PATH = "/AndroidFileUpload/fileUpload.php";
 
     public static final String ACTION_GRAB = "grab";
-    public static final String ACTION_REGISTER = "devices";
+    public static final String ACTION_CALL = "devices";
     public static final String STATUS_DEVICE = "available";
 
     public static final String EXTRA_IMG_NAME = "com.zh.steve.grabbing.extra.IMG_NAME";
